@@ -204,7 +204,7 @@ public class OptionsParser implements HasOptions {
     for (IsOption option : availableOptions) {
       if (option == nullOpt) {
         continue;
-      } else if (option.equals(param)) {
+      } else if (option.isOption(param)) {
         return option;
       } // end if match
     } // end foreach AvailableOption
