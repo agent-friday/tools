@@ -30,7 +30,7 @@ public class OptionsParser implements HasOptions {
   protected Map<IsOption, Boolean> requiredOptions = new HashMap<>();
 
   private OptionsParser() {
-    // Intentionally blank.
+    // Intentionally blank
   } // End constructor
 
   public static OptionsParser getInstance() {
