@@ -8,7 +8,7 @@ package agent_friday.tools;
  *
  */
 public interface IsOption {
-  public boolean equals(String s);
+  public boolean isOption(String s);
 
   public String getLongName();
 
