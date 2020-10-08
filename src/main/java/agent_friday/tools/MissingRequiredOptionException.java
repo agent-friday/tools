@@ -8,7 +8,7 @@ public class MissingRequiredOptionException extends Exception {
    *
    */
   public MissingRequiredOptionException() {
-    // TODO Auto-generated constructor stub
+    super();
   }
 
   /**
@@ -17,7 +17,6 @@ public class MissingRequiredOptionException extends Exception {
    */
   public MissingRequiredOptionException(String message) {
     super(message);
-    // TODO Auto-generated constructor stub
   }
 
   /**
@@ -26,7 +25,6 @@ public class MissingRequiredOptionException extends Exception {
    */
   public MissingRequiredOptionException(Throwable cause) {
     super(cause);
-    // TODO Auto-generated constructor stub
   }
 
   /**
@@ -37,7 +35,6 @@ public class MissingRequiredOptionException extends Exception {
    */
   public MissingRequiredOptionException(String message, Throwable cause) {
     super(message, cause);
-    // TODO Auto-generated constructor stub
   }
 
   /**
@@ -51,6 +48,5 @@ public class MissingRequiredOptionException extends Exception {
   public MissingRequiredOptionException(String message, Throwable cause, boolean enableSuppression,
       boolean writableStackTrace) {
     super(message, cause, enableSuppression, writableStackTrace);
-    // TODO Auto-generated constructor stub
   }
 } // End class MissingRequiredOptionException
