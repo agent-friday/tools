@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Map.Entry;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
@@ -67,7 +67,7 @@ public class OptionsParser implements HasOptions {
     // -argument value1 value2 ... where value1 and value2 would be placed into paramsForOption
     List<String> paramsForOption = new ArrayList<>();
     // The classes that need to be passed in the values from paramsForOption
-    List<ActionCallback> callbacks = null;
+    List<ActionCallback> localCallbacks = null;
     // The current command line argument/flag. For example, command -argument value1 value2 ...
     // where the OptionsEnum equivalent of "argument" would be placed into curOption. The
     // equivalence is given through the paramToEnum() method.
@@ -84,10 +84,10 @@ public class OptionsParser implements HasOptions {
         // there are callbacks to run AND if the user has specified an argument/flag value. This
         // will only be true after the first flag and value is parsed. For example, command -arg1
         // value1 -arg2 value2 ... where arg1 and value1 will be used when "-arg2" is encountered.
-        if (callbacks != null && currentOption != nullOpt && callbacks.size() > 0) {
+        if (localCallbacks != null && currentOption != nullOpt && !localCallbacks.isEmpty()) {
           // Pushes all values for CurrentOption into an array.
           String[] params = paramsForOption.toArray(new String[] {});
-          Iterator<ActionCallback> it = callbacks.iterator();
+          Iterator<ActionCallback> it = localCallbacks.iterator();
 
           // Call each class back that requested notification. Pass in the current argument/flag and
           // the user's values for the argument/flag.
@@ -97,7 +97,7 @@ public class OptionsParser implements HasOptions {
 
           setOptions.put(currentOption, paramsForOption);
           paramsForOption = new ArrayList<>();
-          callbacks = new ArrayList<>();
+          localCallbacks = new ArrayList<>();
         } // End if callbacks set, and have option
 
         // The next argument/flag is a function of arg[i] minus the leading "-".
@@ -110,9 +110,9 @@ public class OptionsParser implements HasOptions {
         // Make sure that a valid flag was found arg[i]
         if (currentOption != nullOpt) {
           // Update the callback list
-          callbacks = this.callbacks.get(currentOption);
+          localCallbacks = callbacks.get(currentOption);
 
-          List<IsOption> keys = new ArrayList<IsOption>(requiredOptions.keySet());
+          List<IsOption> keys = new ArrayList<>(requiredOptions.keySet());
           for (IsOption key : keys) {
             if (key == currentOption) {
               requiredOptions.put(currentOption, Boolean.TRUE);
@@ -130,9 +130,9 @@ public class OptionsParser implements HasOptions {
     } // End foreach arg
 
     // Run the last command (copy and paste from above)
-    if (callbacks != null && currentOption != nullOpt && callbacks.size() > 0) {
+    if (localCallbacks != null && currentOption != nullOpt && !localCallbacks.isEmpty()) {
       String[] params = paramsForOption.toArray(new String[] {""});
-      Iterator<ActionCallback> it = callbacks.iterator();
+      Iterator<ActionCallback> it = localCallbacks.iterator();
 
       while (it.hasNext()) {
         it.next().callback(currentOption, params);
@@ -140,7 +140,7 @@ public class OptionsParser implements HasOptions {
 
       setOptions.put(currentOption, paramsForOption);
 
-      List<IsOption> keys = new ArrayList<IsOption>(requiredOptions.keySet());
+      List<IsOption> keys = new ArrayList<>(requiredOptions.keySet());
       for (IsOption key : keys) {
         if (key == currentOption) {
           requiredOptions.put(currentOption, true);
@@ -148,28 +148,28 @@ public class OptionsParser implements HasOptions {
       }
     } // End check for required option set
 
-    for (IsOption key : requiredOptions.keySet()) {
-      if (!requiredOptions.get(key)) {
-        String optionName = key.toString();
+    for (Entry<IsOption, Boolean> entry : requiredOptions.entrySet()) {
+      if (!entry.getValue().booleanValue()) {
+        String optionName = entry.getKey().toString();
         throw new MissingRequiredOptionException("Required option: " + optionName + " not set.");
       }
     } // End check for missing required options
 
-    String opts = "Options set:\n";
-    for (IsOption key : setOptions.keySet()) {
-      opts += "\t" + key.toString() + ":";
+    StringBuilder opts = new StringBuilder("Options set:\n");
+    for (Entry<IsOption, List<String>> entry : setOptions.entrySet()) {
+      opts.append("\t" + entry.toString() + ":");
 
-      if (setOptions.get(key).size() > 0) {
-        for (String param : setOptions.get(key)) {
-          opts += " " + param;
+      if (!entry.getValue().isEmpty()) {
+        for (String param : entry.getValue()) {
+          opts.append(" " + param);
         }
       } // End if option has parameters
       else {
-        opts += " True";
+        opts.append(" True");
       } // End if option is flag.
-      opts += "\n";
+      opts.append("\n");
     } // End foreach set option
-    messages.debug('0', opts);
+    messages.debug('0', opts.toString());
   } // End getOpts(String[])
 
   private void getRequiredOptions() {
@@ -202,9 +202,7 @@ public class OptionsParser implements HasOptions {
     IsOption[] availableOptions = nullOpt.getValueArray();
 
     for (IsOption option : availableOptions) {
-      if (option == nullOpt) {
-        continue;
-      } else if (option.isOption(param)) {
+      if (option != nullOpt && option.isOption(param)) {
         return option;
       } // end if match
     } // end foreach AvailableOption
@@ -256,13 +254,13 @@ public class OptionsParser implements HasOptions {
    */
   @Override
   public void setCallback(IsOption option, ActionCallback callback) {
-    if (nullOpt != null && !(option.getClass() != nullOpt.getClass())) {
+    if (nullOpt != null && option.getClass() == nullOpt.getClass()) {
       return;
     }
 
     List<ActionCallback> classes = callbacks.get(option);
     if (classes == null) {
-      classes = new ArrayList<ActionCallback>();
+      classes = new ArrayList<>();
     }
 
     classes.add(callback);

@@ -15,17 +15,17 @@ public class HelpParser extends DefaultHandler {
   private String option = "";
   private String parameter = "";
   private String description = "";
-  private String programName = "";
   private boolean param = false;
   private boolean desc = false;
-
+  private boolean required = false;
   private String debugLevel = "";
 
   @Override
   public void startElement(String uri, String localName, String qName, Attributes attributes)
       throws SAXException {
+
     if (qName.equals("Options")) {
-      programName = attributes.getValue("program");
+      String programName = attributes.getValue("program");
 
       System.out.println();
       System.out.println("Usage: " + programName + " [options]");
@@ -44,6 +44,7 @@ public class HelpParser extends DefaultHandler {
       if (attributes.getLength() > 1) {
         String req = attributes.getValue("required");
         if (req.equals("required")) {
+          required = true;
         }
       }
     }
@@ -65,15 +66,17 @@ public class HelpParser extends DefaultHandler {
   @Override
   public void endElement(String uri, String localName, String qName) throws SAXException {
     if (qName.equals("Option")) {
-      System.out.printf("     %1$-8s %2$-17s %3$s\n", option, parameter, description);
+      System.out.printf("     %1$-8s %2$-17s %3$s %4$-5s%n", option, parameter, description,
+          required);
 
       option = "";
       parameter = "";
       description = "";
+      required = false;
     }
 
     if (qName.equals("Level")) {
-      System.out.printf("     %1$-5s %2$s\n", debugLevel, description);
+      System.out.printf("     %1$-5s %2$s%n", debugLevel, description);
 
       debugLevel = "";
       description = "";
@@ -94,7 +97,7 @@ public class HelpParser extends DefaultHandler {
   } // End endElement(String, String, String)
 
   @Override
-  public void characters(char ch[], int start, int length) throws SAXException {
+  public void characters(char[] ch, int start, int length) throws SAXException {
     if (desc) {
       description = new String(ch, start, length);
     }
