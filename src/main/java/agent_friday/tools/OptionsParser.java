@@ -28,6 +28,7 @@ public class OptionsParser implements HasOptions {
   private IsOption helpOpt = null;
   protected Map<IsOption, List<ActionCallback>> callbacks = new HashMap<>();
   protected Map<IsOption, Boolean> requiredOptions = new HashMap<>();
+  private Map<IsOption, List<String>> setOptions = new HashMap<>();
 
   private OptionsParser() {
     // Intentionally blank
@@ -67,12 +68,11 @@ public class OptionsParser implements HasOptions {
     // -argument value1 value2 ... where value1 and value2 would be placed into paramsForOption
     List<String> paramsForOption = new ArrayList<>();
     // The classes that need to be passed in the values from paramsForOption
-    List<ActionCallback> localCallbacks = null;
+    List<ActionCallback> localCallbacks = new ArrayList<>();
     // The current command line argument/flag. For example, command -argument value1 value2 ...
     // where the OptionsEnum equivalent of "argument" would be placed into curOption. The
     // equivalence is given through the paramToEnum() method.
     IsOption currentOption = nullOpt;
-    Map<IsOption, List<String>> setOptions = new HashMap<>();
 
     getRequiredOptions();
 
@@ -84,21 +84,11 @@ public class OptionsParser implements HasOptions {
         // there are callbacks to run AND if the user has specified an argument/flag value. This
         // will only be true after the first flag and value is parsed. For example, command -arg1
         // value1 -arg2 value2 ... where arg1 and value1 will be used when "-arg2" is encountered.
-        if (localCallbacks != null && currentOption != nullOpt && !localCallbacks.isEmpty()) {
-          // Pushes all values for CurrentOption into an array.
-          String[] params = paramsForOption.toArray(new String[] {});
-          Iterator<ActionCallback> it = localCallbacks.iterator();
-
-          // Call each class back that requested notification. Pass in the current argument/flag and
-          // the user's values for the argument/flag.
-          while (it.hasNext()) {
-            it.next().callback(currentOption, params);
-          } // End loop through Callback classes
-
-          setOptions.put(currentOption, paramsForOption);
+        if (currentOption != nullOpt) {
+          doCallbacks(currentOption, localCallbacks, paramsForOption);
           paramsForOption = new ArrayList<>();
           localCallbacks = new ArrayList<>();
-        } // End if callbacks set, and have option
+        }
 
         // The next argument/flag is a function of arg[i] minus the leading "-".
         currentOption = paramToEnum(arg.substring(1));
@@ -130,6 +120,15 @@ public class OptionsParser implements HasOptions {
     } // End foreach arg
 
     // Run the last command (copy and paste from above)
+    doCallbacks(currentOption, localCallbacks, paramsForOption);
+
+    checkRequiredOptions();
+
+    debugSetOptions(messages);
+  } // End getOpts(String[])
+
+  private void doCallbacks(IsOption currentOption, List<ActionCallback> localCallbacks,
+      List<String> paramsForOption) {
     if (localCallbacks != null && currentOption != nullOpt && !localCallbacks.isEmpty()) {
       String[] params = paramsForOption.toArray(new String[] {""});
       Iterator<ActionCallback> it = localCallbacks.iterator();
@@ -147,17 +146,21 @@ public class OptionsParser implements HasOptions {
         }
       }
     } // End check for required option set
+  }
 
+  private void checkRequiredOptions() throws MissingRequiredOptionException {
     for (Entry<IsOption, Boolean> entry : requiredOptions.entrySet()) {
       if (!entry.getValue().booleanValue()) {
         String optionName = entry.getKey().toString();
         throw new MissingRequiredOptionException("Required option: " + optionName + " not set.");
       }
-    } // End check for missing required options
+    }
+  } // End check for missing required options
 
-    StringBuilder opts = new StringBuilder("Options set:\n");
+  private void debugSetOptions(Message messages) {
+    StringBuilder opts = new StringBuilder(String.format("%1s%n", "Options set:"));
     for (Entry<IsOption, List<String>> entry : setOptions.entrySet()) {
-      opts.append("\t" + entry.toString() + ":");
+      opts.append("\t" + entry.getKey().toString() + ":");
 
       if (!entry.getValue().isEmpty()) {
         for (String param : entry.getValue()) {
@@ -167,10 +170,10 @@ public class OptionsParser implements HasOptions {
       else {
         opts.append(" True");
       } // End if option is flag.
-      opts.append("\n");
+      opts = new StringBuilder(String.format("%1s%n", opts.toString()));
     } // End foreach set option
     messages.debug('0', opts.toString());
-  } // End getOpts(String[])
+  }
 
   private void getRequiredOptions() {
     try {
@@ -254,7 +257,7 @@ public class OptionsParser implements HasOptions {
    */
   @Override
   public void setCallback(IsOption option, ActionCallback callback) {
-    if (nullOpt != null && option.getClass() == nullOpt.getClass()) {
+    if (nullOpt != null && option.getClass() != nullOpt.getClass()) {
       return;
     }
 
