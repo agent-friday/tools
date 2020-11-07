@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
@@ -20,7 +21,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * @author agent_friday
  *
  */
-public class OptionsParser implements HasOptions {
+public class OptionsParser implements HasOptions<IsOption> {
 
   private static OptionsParser instance = new OptionsParser();
   private String helpFile = "Help.xml";
@@ -29,6 +30,7 @@ public class OptionsParser implements HasOptions {
   protected Map<IsOption, List<ActionCallback>> callbacks = new HashMap<>();
   protected Map<IsOption, Boolean> requiredOptions = new HashMap<>();
   private Map<IsOption, List<String>> setOptions = new HashMap<>();
+  private Message messages = DefaultMessage.getInstance();
 
   private OptionsParser() {
     // Intentionally blank
@@ -62,8 +64,7 @@ public class OptionsParser implements HasOptions {
    * @throws MissingRequiredOptionException Thrown when the user does not give a required option.
    */
   @Override
-  public void getOpts(String[] args, Message messages)
-      throws MissingRequiredOptionException, InvalidOptionException {
+  public void getOpts(String[] args) throws MissingRequiredOptionException, InvalidOptionException {
     // List of values associated with the current command line argument/flag. For example, command
     // -argument value1 value2 ... where value1 and value2 would be placed into paramsForOption
     List<String> paramsForOption = new ArrayList<>();
@@ -76,7 +77,7 @@ public class OptionsParser implements HasOptions {
 
     getRequiredOptions();
 
-    for (String arg : args) {
+    for (String arg : args)
       // Assuming that the user will not put a "-" in front of any values
       // they pass in.
       if (isArgFlag(arg)) {
@@ -93,9 +94,8 @@ public class OptionsParser implements HasOptions {
         // The next argument/flag is a function of arg[i] minus the leading "-".
         currentOption = paramToEnum(arg.substring(1));
 
-        if (currentOption == helpOpt) {
+        if (currentOption == helpOpt)
           help();
-        }
 
         // Make sure that a valid flag was found arg[i]
         if (currentOption != nullOpt) {
@@ -105,23 +105,28 @@ public class OptionsParser implements HasOptions {
           checkIsRequired(currentOption);
         } // End if CurrentOptions not null
         // End if argument
-      } else { // If arg[i] is not an argument/flag, then it must be value.
+      } else
         paramsForOption.add(arg);
-      } // End if argument parameter
-
-    } // End foreach arg
 
     doCallbacks(currentOption, localCallbacks, paramsForOption);
 
     checkRequiredOptions();
 
-    debugSetOptions(messages);
+    debugSetOptions();
   } // End getOpts(String[])
 
-  private void checkIsRequired(IsOption option) {
-    if (requiredOptions.containsKey(option)) {
-      requiredOptions.put(option, Boolean.TRUE);
+  @Override
+  public void getOpts(String[] args, Message messages)
+      throws MissingRequiredOptionException, InvalidOptionException {
+    if (messages != null) {
+      this.messages = messages;
     }
+    getOpts(args);
+  }
+
+  private void checkIsRequired(IsOption option) {
+    if (requiredOptions.containsKey(option))
+      requiredOptions.put(option, Boolean.TRUE);
   } // End checkIsRequired(IsOption)
 
   private boolean isArgFlag(String arg) {
@@ -134,57 +139,52 @@ public class OptionsParser implements HasOptions {
       String[] params = paramsForOption.toArray(new String[] {""});
       Iterator<ActionCallback> it = localCallbacks.iterator();
 
-      while (it.hasNext()) {
+      while (it.hasNext())
         it.next().callback(currentOption, params);
-      }
 
       setOptions.put(currentOption, paramsForOption);
 
       List<IsOption> keys = new ArrayList<>(requiredOptions.keySet());
-      for (IsOption key : keys) {
-        if (key == currentOption) {
+      for (IsOption key : keys)
+        if (key == currentOption)
           requiredOptions.put(currentOption, true);
-        }
-      }
     }
   } // End doCallbacks(IsOption, List<ActionCallback>, List<String>)
 
   private void checkRequiredOptions() throws MissingRequiredOptionException {
-    for (Entry<IsOption, Boolean> entry : requiredOptions.entrySet()) {
+    for (Entry<IsOption, Boolean> entry : requiredOptions.entrySet())
       if (!entry.getValue().booleanValue()) {
         String optionName = entry.getKey().toString();
         throw new MissingRequiredOptionException("Required option: " + optionName + " not set.");
       }
-    } // End check for missing required options
   } // End checkRequiredOptions()
 
-  private void debugSetOptions(Message message) {
+  private void debugSetOptions() {
     StringBuilder opts = new StringBuilder(String.format("%1s%n", "Options set:"));
     for (Entry<IsOption, List<String>> entry : setOptions.entrySet()) {
       opts.append("\t" + entry.getKey().toString() + ":");
 
-      if (!entry.getValue().isEmpty()) {
-        for (String param : entry.getValue()) {
+      if (!entry.getValue().isEmpty())
+        for (String param : entry.getValue())
           opts.append(" " + param);
-        }
-      } // End if option has parameters
-      else {
+      else
         opts.append(" True");
-      } // End if option is flag.
 
       opts = new StringBuilder(String.format("%1s%n", opts.toString()));
     } // End foreach set option
-    message.debug('0', opts.toString());
+    messages.debug('0', opts.toString());
   } // End debugSetOptions(Message)
 
   private void getRequiredOptions() {
     try {
       SAXParserFactory factory = SAXParserFactory.newInstance();
       SAXParser saxParser = factory.newSAXParser();
+      saxParser.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+      saxParser.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
       RequiredOptionsHandler handler = new RequiredOptionsHandler();
       saxParser.parse(helpFile, handler);
     } catch (Exception e) {
-      e.printStackTrace();
+      messages.error("Error trying to parse the help file for required options: " + e.getMessage());
     }
   } // End getRequiredOptions
 
@@ -206,11 +206,9 @@ public class OptionsParser implements HasOptions {
   private IsOption paramToEnum(String param) throws InvalidOptionException {
     IsOption[] availableOptions = nullOpt.getValueArray();
 
-    for (IsOption option : availableOptions) {
-      if (option != nullOpt && option.isOption(param)) {
+    for (IsOption option : availableOptions)
+      if (option != nullOpt && option.isOption(param))
         return option;
-      } // end if match
-    } // end foreach AvailableOption
 
     throw new InvalidOptionException("Invalid argument: " + param);
   } // end ParamToEnum
@@ -231,17 +229,18 @@ public class OptionsParser implements HasOptions {
    */
   @Override
   public void help() {
-    if (helpFile != null) {
+    if (helpFile != null)
       try {
         SAXParserFactory factory = SAXParserFactory.newInstance();
         SAXParser saxParser = factory.newSAXParser();
+        saxParser.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        saxParser.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
         HelpParser handler = new HelpParser();
         saxParser.parse(helpFile, handler);
         System.exit(0);
       } catch (Exception e) {
-        e.printStackTrace();
+        messages.error("Error trying to parse the help file: " + e.getMessage());
       }
-    }
   } // End help
 
   /**
@@ -259,9 +258,8 @@ public class OptionsParser implements HasOptions {
    */
   @Override
   public void setCallback(IsOption option, ActionCallback callback) {
-    if (nullOpt != null && option.getClass() != nullOpt.getClass()) {
+    if (nullOpt != null && option.getClass() != nullOpt.getClass())
       return;
-    }
 
     List<ActionCallback> classes = callbacks.getOrDefault(option, new ArrayList<>());
     classes.add(callback);
@@ -277,7 +275,7 @@ public class OptionsParser implements HasOptions {
 
         if (attributes.getLength() > 1) {
           String required = attributes.getValue("required");
-          if (required.equals("required")) {
+          if (required.equals("required"))
             // This should always return true
             try {
               // Found a required option, put it in the map and set it to false. When the option and
@@ -285,9 +283,8 @@ public class OptionsParser implements HasOptions {
               // option.
               requiredOptions.put(paramToEnum(name), Boolean.FALSE);
             } catch (InvalidOptionException e) {
-              e.printStackTrace();
+              messages.error(e.getMessage() + ": `" + name + "`");
             }
-          } // End if option is required
         } // End if option tag has more than one attribute
       } // End if have option tag
     } // End startElement(String, String, String, Attributes)
