@@ -105,8 +105,9 @@ public class OptionsParser implements HasOptions<IsOption> {
           checkIsRequired(currentOption);
         } // End if CurrentOptions not null
         // End if argument
-      } else
+      } else { // If arg[i] is not an argument/flag, then it must be value.
         paramsForOption.add(arg);
+      }
 
     doCallbacks(currentOption, localCallbacks, paramsForOption);
 
