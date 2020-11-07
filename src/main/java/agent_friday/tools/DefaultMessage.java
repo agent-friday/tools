@@ -10,7 +10,7 @@ package agent_friday.tools;
  */
 public class DefaultMessage implements Message {
 
-  private volatile static DefaultMessage instance;
+  private static volatile DefaultMessage instance;
 
   private DefaultMessage() {
     // Intentionally blank.
