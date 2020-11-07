@@ -79,7 +79,7 @@ public class OptionsParser implements HasOptions {
     for (String arg : args) {
       // Assuming that the user will not put a "-" in front of any values
       // they pass in.
-      if (arg.charAt(0) == '-' || arg.charAt(0) == '/') {
+      if (isArgFlag(arg)) {
         // Run the previous list of callbacks with the values collected. Only run the callbacks if
         // there are callbacks to run AND if the user has specified an argument/flag value. This
         // will only be true after the first flag and value is parsed. For example, command -arg1
@@ -102,17 +102,10 @@ public class OptionsParser implements HasOptions {
           // Update the callback list
           localCallbacks = callbacks.getOrDefault(currentOption, new ArrayList<>());
 
-          for (IsOption key : requiredOptions.keySet()) {
-            if (key == currentOption) {
-              requiredOptions.put(currentOption, Boolean.TRUE);
-              break;
-            } // Mark required option as set
-          } // Loop through required options
+          checkIsRequired(currentOption);
         } // End if CurrentOptions not null
-      } // End if argument
-
-      // If arg[i] is not an argument/flag, then it must be value.
-      else {
+        // End if argument
+      } else { // If arg[i] is not an argument/flag, then it must be value.
         paramsForOption.add(arg);
       } // End if argument parameter
 
@@ -124,6 +117,17 @@ public class OptionsParser implements HasOptions {
 
     debugSetOptions(messages);
   } // End getOpts(String[])
+
+
+  private void checkIsRequired(IsOption option) {
+    if (requiredOptions.containsKey(option)) {
+      requiredOptions.put(option, Boolean.TRUE);
+    }
+  } // End checkIsRequired(IsOption)
+
+  private boolean isArgFlag(String arg) {
+    return arg != null && !arg.isEmpty() && (arg.charAt(0) == '-' || arg.charAt(0) == '/');
+  } // End isArgFlag(String)
 
   private void doCallbacks(IsOption currentOption, List<ActionCallback> localCallbacks,
       List<String> paramsForOption) {
