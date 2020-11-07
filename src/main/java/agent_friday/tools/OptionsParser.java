@@ -118,6 +118,7 @@ public class OptionsParser implements HasOptions {
     debugSetOptions(messages);
   } // End getOpts(String[])
 
+
   private void checkIsRequired(IsOption option) {
     if (requiredOptions.containsKey(option)) {
       requiredOptions.put(option, Boolean.TRUE);
