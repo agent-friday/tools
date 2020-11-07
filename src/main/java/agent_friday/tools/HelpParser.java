@@ -61,13 +61,14 @@ public class HelpParser extends DefaultHandler {
     if (qName.equals("description")) {
       desc = true;
     }
+
   } // End startElement(String, String, String, Attributes)
 
   @Override
   public void endElement(String uri, String localName, String qName) throws SAXException {
     if (qName.equals("Option")) {
-      System.out.printf("     %1$-8s %2$-17s %3$s %4$-5s%n", option, parameter, description,
-          required);
+      System.out.println(String.format("     %1$-8s %2$-17s %3$s %4$-5s", option, parameter,
+          description, required));
 
       option = "";
       parameter = "";
@@ -76,7 +77,7 @@ public class HelpParser extends DefaultHandler {
     }
 
     if (qName.equals("Level")) {
-      System.out.printf("     %1$-5s %2$s%n", debugLevel, description);
+      System.out.println(String.format("     %1$-5s %2$s", debugLevel, description));
 
       debugLevel = "";
       description = "";
@@ -106,4 +107,5 @@ public class HelpParser extends DefaultHandler {
       parameter = "<" + new String(ch, start, length) + ">";
     }
   } // End characters(char[], int, int)
+
 }
