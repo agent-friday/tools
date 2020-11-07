@@ -11,4 +11,6 @@ public interface Message {
   public void debug(char level, String message);
 
   public void verbose(String message);
+
+  public void error(String errorMessage);
 }
