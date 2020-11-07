@@ -3,11 +3,6 @@
  */
 package agent_friday.tools;
 
-import java.util.logging.Formatter;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.StreamHandler;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -24,28 +19,23 @@ public class HelpParser extends DefaultHandler {
   private boolean desc = false;
   private boolean required = false;
   private String debugLevel = "";
-  private Logger log;
 
   @Override
   public void startElement(String uri, String localName, String qName, Attributes attributes)
       throws SAXException {
 
-    Logger log = getLogger();
-    Level logLevel = log.getLevel();
-    log.setLevel(Level.FINEST);
-
     if (qName.equals("Options")) {
       String programName = attributes.getValue("program");
 
-      log.finest(String.format("%1s%n", ""));
-      log.finest(String.format("%1s%n", "Usage: " + programName + " [options]"));
-      log.finest(String.format("%1s%n", ""));
+      System.out.println();
+      System.out.println("Usage: " + programName + " [options]");
+      System.out.println();
     }
 
     if (qName.equals("DebugLevels")) {
-      log.finest(String.format("%n", ""));
-      log.finest(String.format("%1s%n", "Debugging Levels:"));
-      log.finest(String.format("%n", ""));
+      System.out.println();
+      System.out.println("Debugging Levels:");
+      System.out.println();
     }
 
     if (qName.equals("Option")) {
@@ -72,18 +62,13 @@ public class HelpParser extends DefaultHandler {
       desc = true;
     }
 
-    log.setLevel(logLevel);
   } // End startElement(String, String, String, Attributes)
 
   @Override
   public void endElement(String uri, String localName, String qName) throws SAXException {
-    Logger log = getLogger();
-    Level logLevel = log.getLevel();
-    log.setLevel(Level.FINEST);
-
     if (qName.equals("Option")) {
-      log.finest(String.format("     %1$-8s %2$-17s %3$s %4$-5s%n", option, parameter, description,
-          required));
+      System.out.println(String.format("     %1$-8s %2$-17s %3$s %4$-5s", option, parameter,
+          description, required));
 
       option = "";
       parameter = "";
@@ -92,7 +77,7 @@ public class HelpParser extends DefaultHandler {
     }
 
     if (qName.equals("Level")) {
-      log.finest(String.format("     %1$-5s %2$s%n", debugLevel, description));
+      System.out.println(String.format("     %1$-5s %2$s", debugLevel, description));
 
       debugLevel = "";
       description = "";
@@ -110,7 +95,6 @@ public class HelpParser extends DefaultHandler {
     if (qName.equals("DebugLevels")) {
       System.out.println();
     }
-    log.setLevel(logLevel);
   } // End endElement(String, String, String)
 
   @Override
@@ -124,20 +108,4 @@ public class HelpParser extends DefaultHandler {
     }
   } // End characters(char[], int, int)
 
-  private Logger getLogger() {
-    if (log == null) {
-      log = Logger.getLogger(this.getClass().getCanonicalName());
-      StreamHandler sh = new StreamHandler(System.out, new Formatter() {
-
-        @Override
-        public String format(LogRecord record) {
-          return record.getMessage();
-        }
-
-      });
-      sh.setLevel(Level.FINEST);
-      log.addHandler(sh);
-    }
-    return log;
-  }
 }
